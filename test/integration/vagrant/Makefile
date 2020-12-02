@@ -30,3 +30,6 @@ reload:
 clean:
 	vagrant destroy -f
 	rm -rf .depend
+
+cmds:
+	vagrant ssh -c "docker exec integration_sifnode1_1 cat /tmp/testrun.sh"

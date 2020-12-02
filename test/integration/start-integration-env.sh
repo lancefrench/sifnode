@@ -44,14 +44,15 @@ fi
 BASEDIR=${BASEDIR} rake genesis:network:scaffold['localnet']
 BASEDIR=${BASEDIR} rake genesis:network:boot["localnet,${ETHEREUM_CONTRACT_ADDRESS},ae6ae8e5ccbfb04590405997ee2d52d2b330726137b875053c36d94e974d162f,ws://192.168.2.6:7545/"]
 
-# prior command generations yaml that provides useful usernames and passwords
-# wait for it to be complete
-#
+# those rake commands generate yaml that provides useful usernames and passwords
+# wait for it to appear
+
 NETDEF=$NETWORKDIR/network-definition.yml
 while [ ! -f $NETWORKDIR/network-definition.yml ]
 do
   sleep 2
 done
+
 PASSWORD=$(cat $NETDEF | yq r - ".password")
 ADDR=$(cat $NETDEF | yq r - ".address")
 echo $PASSWORD
@@ -70,8 +71,7 @@ docker logs -f ${CONTAINER_NAME} | grep -m 1 "Subscribed"
 #
 # Transfer Eth into Ceth in our validator account
 #
-cd $BASEDIR/smart-contracts
-yarn peggy:lock ${ADDR} 0x0000000000000000000000000000000000000000 1000000000000000000
+( cd $BASEDIR/smart-contracts; yarn peggy:lock ${ADDR} 0x0000000000000000000000000000000000000000 17 )
 
 #
 # Transfer Eth into Ceth on our User account 
@@ -80,13 +80,13 @@ yarn peggy:lock ${ADDR} 0x0000000000000000000000000000000000000000 1000000000000
 USER1ADDR=$(cat $NETDEF | yq r - "[1].address")
 echo $USER1ADDR
 sleep 5
-yarn peggy:lock ${USER1ADDR} 0x0000000000000000000000000000000000000000 1000000000000000000
+( cd $BASEDIR/smart-contracts; yarn peggy:lock ${USER1ADDR} 0x0000000000000000000000000000000000000000 19 )
 sleep 5
 
 #
 # Transfer Rowan from validator account to user account
 #
-docker exec ${CONTAINER_NAME} bash -c "/test/integration/add-rowan-to-second-account.sh"
+docker exec ${CONTAINER_NAME} bash -c "/test/integration/add-rowan-to-second-account.sh 23"
 sleep 5
 
 #
