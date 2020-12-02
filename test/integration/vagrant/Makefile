@@ -18,7 +18,7 @@ all: test
 
 .PHONY: test
 test: .depend/setup
-	vagrant ssh -c "cd ${BASEDIR} && bash test/integration/start-integration-env.sh"
+	vagrant ssh -c "cd ${BASEDIR} && bash -x test/integration/start-integration-env.sh"
 
 # convenience targets
 
