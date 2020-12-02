@@ -23,6 +23,10 @@ def print_error_message(error_message):
     sys.exit(error_message)
 
 def get_shell_output(command_line):
+    # we append all shell commands to /tmp/testrun.sh
+    file1 = open("/tmp/testrun.sh", "a")
+    file1.write(command_line + "\n")
+    file1.close()
     sub = subprocess.Popen(command_line, shell=True, stdout=subprocess.PIPE)
     subprocess_return = sub.stdout.read()
     return subprocess_return.rstrip()
