@@ -1,0 +1,34 @@
+There only are a few files in this branch you care about:
+
+These set up the github actions environment (or any other ubuntu instance):
+sifnode/scripts/setup-linux-environment.sh
+sifnode/scripts/setup-linux-environment-root.sh
+sifnode/scripts/setup-linux-environment-user.sh
+
+These actually run the tests:
+
+sifnode/scripts/start-integration-env.sh
+sifnode/scripts/peggy-basic-test-docker.py
+
+This sets up the github action (output shows up here on every push: https://github.com/Sifchain/sifnode/actions)
+.github/workflows/integrationtest.yml
+
+And right now peggy-basic-test-docker.py runs the test but doesn't actually fail;
+that needs to be modified.  (Return non-zero is all you need to do to fail a github action)
+
+We probably don't want the scripts in the scripts directory; they should move down
+into the test/ tree.  There's nothing special about this branch - my plan was to 
+branch from develop and just pull the relevant files out of this (and then delete it).
+
+We'd probably like to move more of this into pure docker scripts instead of a big script
+(sifnode/scripts/start-integration-env.sh) that does a bunch of things outside docker 
+containers.
+
+Things about github actions:
+- run commands don't read .bashrc/.bash_profile - see the "shell" line in .github/workflows/integrationtest.yml
+to see how to start a run that reads .bash_profile
+- github does install go, we don't use theirs
+- if you're playing with actions, I'd set up a toy repository to push to, our full build takes ten minutes
+- docker exec -ti doesn't work well in actions; you don't get output, so I removed the -ti from our scripts
+- the #peggy-team slack channel can probably point you in the right direction for things, particular figuring
+out the behavior of the tests in peggy-basic-test-docker.py

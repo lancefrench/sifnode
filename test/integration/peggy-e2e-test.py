@@ -2,6 +2,7 @@ import subprocess
 import json
 import time
 import re
+import sys
 
 # define users
 VALIDATOR = "user1"
@@ -22,7 +23,8 @@ ETH_ACCOUNT = "0xf17f52151EbEF6C7334FAD080c5704D77216b732"
 BRIDGE_CONTRACT = "0x75c35C980C0d37ef46DF04d31A140b65503c0eEd"
 ROWAN_CONTRACT = "0x409Ba3dd291bb5D48D5B4404F5EFa207441F6CbA"
 
-GOTO_TESTNET_FOLDER = "cd ../smart-contracts/;\n"
+BASEDIR = sys.argv[0]
+GOTO_TESTNET_FOLDER = f"cd {BASEDIR}/smart-contracts/;\n"
 
 
 def print_error_message(error_message):
@@ -32,6 +34,7 @@ def print_error_message(error_message):
 
 
 def get_shell_output(command_line):
+    print(f"cmd: {command_line}")
     sub = subprocess.Popen(command_line, shell=True, stdout=subprocess.PIPE)
     subprocess_return = sub.stdout.read()
     return subprocess_return.rstrip()

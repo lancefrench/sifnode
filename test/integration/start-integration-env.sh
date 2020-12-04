@@ -15,10 +15,12 @@ sudo rm -rf $NETWORKDIR && mkdir $NETWORKDIR
 rm -rf ${BASEDIR}/smart-contracts/build ${BASEDIR}/smart-contracts/.openzeppelin
 make -C ${BASEDIR} install
 
-#
+# ===== Everything from here on down is executed in the $BASEDIR/smart-contracts directory
+cd $BASEDIR/smart-contracts
+
 # Startup ganache-cli (https://github.com/trufflesuite/ganache)
 
-cd $BASEDIR/smart-contracts && yarn install
+yarn --cwd $BASEDIR/smart-contracts install
 
 docker-compose --project-name genesis -f $BASEDIR/test/integration/docker-compose-ganache.yml up -d
 
@@ -71,7 +73,7 @@ docker logs -f ${CONTAINER_NAME} | grep -m 1 "Subscribed"
 #
 # Transfer Eth into Ceth in our validator account
 #
-( cd $BASEDIR/smart-contracts; yarn peggy:lock ${ADDR} 0x0000000000000000000000000000000000000000 17 )
+yarn --cwd $BASEDIR/smart-contracts peggy:lock ${ADDR} 0x0000000000000000000000000000000000000000 17
 
 #
 # Transfer Eth into Ceth on our User account 
@@ -80,7 +82,7 @@ docker logs -f ${CONTAINER_NAME} | grep -m 1 "Subscribed"
 USER1ADDR=$(cat $NETDEF | yq r - "[1].address")
 echo $USER1ADDR
 sleep 5
-( cd $BASEDIR/smart-contracts; yarn peggy:lock ${USER1ADDR} 0x0000000000000000000000000000000000000000 19 )
+yarn --cwd $BASEDIR/smart-contracts peggy:lock ${USER1ADDR} 0x0000000000000000000000000000000000000000 19
 sleep 5
 
 #

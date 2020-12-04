@@ -2,6 +2,11 @@ import subprocess
 import json
 import time
 import sys
+from test_utilities import print_error_message
+from test_utilities import get_shell_output
+from test_utilities import test_log_line
+
+print("qqr startup basicdocker")
 
 # define users
 USER = "user1"
@@ -17,42 +22,32 @@ ETHEREUM_SENDER_ADDRESS='0x11111111262b236c9ac9a9a8c8e4276b5cf6b2c9'
 ETHEREUM_NULL_ADDRESS='0x0000000000000000000000000000000000000000'
 ETHEREUM_CHAIN_ID='5777'
 
-persistantLog = open("/tmp/testrun.sh", "a")
-
-def print_error_message(error_message):
-    print("#################################")
-    print("!!!!Error: ", error_message)
-    print("#################################")
-    sys.exit(error_message)
-
-def get_shell_output(command_line):
-    # we append all shell commands and output to /tmp/testrun.sh
-    persistantLog.write(command_line + "\n")
-    sub = subprocess.Popen(command_line, shell=True, stdout=subprocess.PIPE)
-    subprocess_return = sub.stdout.read().rstrip().decode("utf-8")
-    persistantLog.write("  " + subprocess_return + "\n")
-    return subprocess_return
 
 def get_password():
     command_line = "yq r network-definition.yml \"(*==$MONIKER).password\""
     output = get_shell_output(command_line)
     return f"{output}"
 
+
 def get_moniker():
     command_line = "echo $MONIKER"
     return get_shell_output(command_line)
+
 
 def get_ethereum_contract_address():
     command_line = "echo $ETHEREUM_CONTRACT_ADDRESS"
     return get_shell_output(command_line)
 
+
 VALIDATOR = get_moniker()
 ETHEREUM_CONTRACT_ADDRESS = get_ethereum_contract_address()
+
 
 def get_user_account(user):
     password = get_password()
     command_line = "yes " + password + " | sifnodecli keys show " + user + " -a"
     return get_shell_output(command_line)
+
 
 def get_operator_account(user):
     password = get_password()
@@ -66,6 +61,7 @@ def get_account_nonce(user):
     json_str = json.loads(output)
     return json_str["value"]["sequence"]
 
+
 # get the balance for user in the denom currency from sifnodecli
 def get_balance(user, denom):
     command_line = "sifnodecli q auth account " + get_user_account(user) + ' -o json'
@@ -76,6 +72,7 @@ def get_balance(user, denom):
         if coin["denom"] == denom:
             return coin["amount"]
     return 0
+
 
 # sifnodecli tx ethbridge create-claim
 # claim_type is lock | burn
@@ -99,6 +96,7 @@ def create_claim(user, validator, amount, denom, claim_type):
     print(command_line)
     return get_shell_output(command_line)
 
+
 def burn_peggy_coin(user, validator, amount):
     command_line = """yes {} | sifnodecli tx ethbridge burn {} \
     0x11111111262b236c9ac9a9a8c8e4276b5cf6b2c9 {} {} \
@@ -106,6 +104,7 @@ def burn_peggy_coin(user, validator, amount):
     --yes -o json""".format(get_password(), get_user_account(user),
                     amount, PEGGYETH, user)
     return get_shell_output(command_line)
+
 
 def lock_rowan(user, amount):
     print('lock')
@@ -115,8 +114,9 @@ def lock_rowan(user, amount):
     """.format(get_password(), get_user_account(user), amount, user)
     return get_shell_output(command_line)
 
+
 def test_case_1():
-    persistantLog.write("########## Test Case One Start: lock eth in ethereum then mint ceth in sifchain\n")
+    test_log_line("########## Test Case One Start: lock eth in ethereum then mint ceth in sifchain\n")
     print(
         "########## Test Case One Start: lock eth in ethereum then mint ceth in sifchain"
     )
@@ -137,6 +137,7 @@ def test_case_1():
 
     print("########## Test Case One Over ##########")
     persistantLog.write("########## Test Case One Over ##########\n")
+
 
 def test_case_2():
     print(
@@ -159,6 +160,7 @@ def test_case_2():
         print_error_message("balance is wrong after send eth lock claim")
     print("########## Test Case Two Over ##########")
 
+
 def test_case_3():
     print(
         "########## Test Case Three Start: lock rowan in sifchain transfer to ethereum"
@@ -178,6 +180,7 @@ def test_case_3():
         print_error_message("balance is wrong after send eth lock claim")
     print("########## Test Case Three Over ##########")
 
+
 def test_case_4():
     print(
         "########## Test Case Four Start: burn erwn in ethereum then transfer rwn back to sifchain"
@@ -194,6 +197,7 @@ def test_case_4():
     if balance_after_tx != balance_before_tx + AMOUNT:
         print_error_message("balance is wrong after send eth lock claim")
     print("########## Test Case Four Over ##########")
+
 
 test_case_1()
 test_case_2()
