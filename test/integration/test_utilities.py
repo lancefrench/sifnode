@@ -6,7 +6,6 @@ import traceback
 
 persistantLog = open("/tmp/testrun.sh", "a")
 
-
 def print_error_message(error_message):
     print("#################################")
     print("!!!!Error: ", error_message)
@@ -29,6 +28,7 @@ def get_shell_output(command_line):
     test_log(command_line + "\n")
     sub = subprocess.Popen(command_line, shell=True, stdout=subprocess.PIPE)
     subprocess_return = sub.stdout.read().rstrip().decode("utf-8")
+    print(" xqqr " + subprocess_return + "\n")
     test_log(" qqr " + subprocess_return + "\n")
     return subprocess_return
 
@@ -49,8 +49,12 @@ def get_user_account(user, network_password):
 def get_password(network_definition_file):
     if not os.environ.get("MONIKER"):
         print_error_message("MONIKER environment var not set")
+    f = get_shell_output(f"cat {network_definition_file}")
+    print(f"full pwx file: {f}")
     command_line = f"cat {network_definition_file} | yq r - \"(*==$MONIKER).password\""
-    return get_shell_output(command_line)
+    output = get_shell_output(command_line)
+    print(f"outpurxr: {output}")
+    return output
 
 
 # get the balance for user in the denom currency from sifnodecli
@@ -63,3 +67,11 @@ def get_balance(user, denom, network_password):
         if coin["denom"] == denom:
             return coin["amount"]
     return 0
+
+
+network_definition_file = sys.argv[1]
+if not network_definition_file:
+    print_error_message("missing network_definition_file argument")
+network_password = get_password(network_definition_file)
+if not network_password:
+    print_error_message(f"unable to read network password from {network_definition_file}")

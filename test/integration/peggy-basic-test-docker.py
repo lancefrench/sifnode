@@ -2,7 +2,8 @@ import subprocess
 import json
 import time
 import sys
-from test_utilities import print_error_message, get_user_account, get_password, get_balance, get_shell_output_json
+from test_utilities import print_error_message, get_user_account, get_password, get_balance, get_shell_output_json, \
+    network_password
 from test_utilities import get_shell_output
 from test_utilities import test_log_line
 
@@ -20,13 +21,7 @@ ETHEREUM_SENDER_ADDRESS='0x11111111262b236c9ac9a9a8c8e4276b5cf6b2c9'
 ETHEREUM_NULL_ADDRESS='0x0000000000000000000000000000000000000000'
 ETHEREUM_CHAIN_ID='5777'
 
-network_definition_file = sys.argv[1]
-if not network_definition_file:
-    print_error_message("missing network_definition_file argument")
-network_password = get_password(network_definition_file)
-if not network_password:
-    print_error_message(f"unable to read network password from {network_definition_file}")
-    
+
 def get_moniker():
     command_line = "echo $MONIKER"
     return get_shell_output(command_line)
