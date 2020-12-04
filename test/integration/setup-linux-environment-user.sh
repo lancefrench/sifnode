@@ -4,8 +4,6 @@
 # that needs to happen as non-root.
 # (see setup-linux-environment-root.sh for more tools)
 
-curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.33.0
-
 mkdir -p ~/.npm-global/lib
 npm config set prefix '~/.npm-global'
 
@@ -23,3 +21,6 @@ echo 'export GOROOT=/usr/local/go' >> ~/.bash_profile
 echo 'export PATH=$GOROOT/bin:$PATH' >> ~/.bash_profile
 echo 'export PATH=$GOBIN:$PATH' >> ~/.bash_profile
 echo 'export PATH=$HOME/.npm-global/bin:$PATH' >> ~/.bash_profile
+
+. ~/.bash_profile
+curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.33.0

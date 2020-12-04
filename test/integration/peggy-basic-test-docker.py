@@ -2,11 +2,9 @@ import subprocess
 import json
 import time
 import sys
-from test_utilities import print_error_message
+from test_utilities import print_error_message, get_user_account, get_password, get_balance, get_shell_output_json
 from test_utilities import get_shell_output
 from test_utilities import test_log_line
-
-print("qqr startup basicdocker")
 
 # define users
 USER = "user1"
@@ -22,13 +20,13 @@ ETHEREUM_SENDER_ADDRESS='0x11111111262b236c9ac9a9a8c8e4276b5cf6b2c9'
 ETHEREUM_NULL_ADDRESS='0x0000000000000000000000000000000000000000'
 ETHEREUM_CHAIN_ID='5777'
 
-
-def get_password():
-    command_line = "yq r network-definition.yml \"(*==$MONIKER).password\""
-    output = get_shell_output(command_line)
-    return f"{output}"
-
-
+network_definition_file = sys.argv[1]
+if not network_definition_file:
+    print_error_message("missing network_definition_file argument")
+network_password = get_password(network_definition_file)
+if not network_password:
+    print_error_message(f"unable to read network password from {network_definition_file}")
+    
 def get_moniker():
     command_line = "echo $MONIKER"
     return get_shell_output(command_line)
@@ -43,35 +41,15 @@ VALIDATOR = get_moniker()
 ETHEREUM_CONTRACT_ADDRESS = get_ethereum_contract_address()
 
 
-def get_user_account(user):
-    password = get_password()
-    command_line = "yes " + password + " | sifnodecli keys show " + user + " -a"
-    return get_shell_output(command_line)
-
-
 def get_operator_account(user):
-    password = get_password()
+    password = network_password
     command_line = "yes " + password + " | sifnodecli keys show " + user + " -a --bech val"
     return get_shell_output(command_line)
 
 
 def get_account_nonce(user):
-    command_line = "sifnodecli q auth account " + get_user_account(user) + ' -o json'
-    output = get_shell_output(command_line)
-    json_str = json.loads(output)
-    return json_str["value"]["sequence"]
-
-
-# get the balance for user in the denom currency from sifnodecli
-def get_balance(user, denom):
-    command_line = "sifnodecli q auth account " + get_user_account(user) + ' -o json'
-    output = get_shell_output(command_line)
-    json_str = json.loads(output)
-    coins = json_str["value"]["coins"]
-    for coin in coins:
-        if coin["denom"] == denom:
-            return coin["amount"]
-    return 0
+    command_line = "sifnodecli q auth account " + get_user_account(user, network_password) + ' -o json'
+    return get_shell_output_json(command_line)["value"]["sequence"]
 
 
 # sifnodecli tx ethbridge create-claim
@@ -79,18 +57,18 @@ def get_balance(user, denom):
 def create_claim(user, validator, amount, denom, claim_type):
     print(amount)
     print('----- params')
-    password = get_password()
+    password = network_password
     print(password)
     print(validator)
     print(get_account_nonce(validator))
-    print(get_user_account(user))
+    print(get_user_account(user, network_password))
     print(get_operator_account(validator))
     print(get_ethereum_contract_address())
     print('----- params')
-    print(get_password())
-    command_line = f""" yes {get_password()} | sifnodecli tx ethbridge create-claim \
+    print(network_password)
+    command_line = f""" yes {network_password} | sifnodecli tx ethbridge create-claim \
             {ETHEREUM_CONTRACT_ADDRESS} {get_account_nonce(validator)} {denom} \
-            {ETHEREUM_SENDER_ADDRESS} {get_user_account(user)} {get_operator_account(validator)} \
+            {ETHEREUM_SENDER_ADDRESS} {get_user_account(user, network_password)} {get_operator_account(validator)} \
             {amount} {claim_type} --token-contract-address={ETHEREUM_NULL_ADDRESS} \
             --ethereum-chain-id={ETHEREUM_CHAIN_ID} --from={validator} --yes -o json"""
     print(command_line)
@@ -101,7 +79,7 @@ def burn_peggy_coin(user, validator, amount):
     command_line = """yes {} | sifnodecli tx ethbridge burn {} \
     0x11111111262b236c9ac9a9a8c8e4276b5cf6b2c9 {} {} \
     --ethereum-chain-id=5777 --from={} \
-    --yes -o json""".format(get_password(), get_user_account(user),
+    --yes -o json""".format(network_password, get_user_account(user, network_password),
                     amount, PEGGYETH, user)
     return get_shell_output(command_line)
 
@@ -111,16 +89,16 @@ def lock_rowan(user, amount):
     command_line = """yes {} |sifnodecli tx ethbridge lock {} \
             0x11111111262b236c9ac9a9a8c8e4276b5cf6b2c9 {} rowan \
             --ethereum-chain-id=5777 --from={} --yes -o json
-    """.format(get_password(), get_user_account(user), amount, user)
+    """.format(network_password, get_user_account(user, network_password), amount, user)
     return get_shell_output(command_line)
 
 
 def test_case_1():
     test_log_line("########## Test Case One Start: lock eth in ethereum then mint ceth in sifchain\n")
     print(
-        "########## Test Case One Start: lock eth in ethereum then mint ceth in sifchain"
+        f"########## Test Case One Start: lock eth in ethereum then mint ceth in sifchain {network_password}"
     )
-    balance_before_tx = int(get_balance(USER, PEGGYETH))
+    balance_before_tx = int(get_balance(USER, PEGGYETH, network_password))
     print(f"Before lock transaction {USER}'s balance of {PEGGYETH} is {balance_before_tx}")
 
     print("Send lock claim to Sifchain...")
@@ -128,7 +106,7 @@ def test_case_1():
 
     time.sleep(SLEEPTIME)
 
-    balance_after_tx = int(get_balance(USER, PEGGYETH))
+    balance_after_tx = int(get_balance(USER, PEGGYETH, network_password))
 
     print(f"After lock transaction {USER}'s balance of {PEGGYETH} is {balance_after_tx}")
 
@@ -136,14 +114,14 @@ def test_case_1():
         print_error_message("balance is wrong after send eth lock claim")
 
     print("########## Test Case One Over ##########")
-    persistantLog.write("########## Test Case One Over ##########\n")
+    test_log_line("########## Test Case One Over ##########\n")
 
 
 def test_case_2():
     print(
         "########## Test Case Two Start: burn ceth in sifchain then eth back to ethereum"
     )
-    balance_before_tx = int(get_balance(USER, PEGGYETH))
+    balance_before_tx = int(get_balance(USER, PEGGYETH, network_password))
     print('before_tx', balance_before_tx)
     print("Before burn transaction {}'s balance of {} is {}".format(
         USER, PEGGYETH, balance_before_tx))
@@ -153,7 +131,7 @@ def test_case_2():
     print("Send burn claim to Sifchain...")
     burn_peggy_coin(USER, VALIDATOR, AMOUNT)
     time.sleep(SLEEPTIME)
-    balance_after_tx = int(get_balance(USER, PEGGYETH))
+    balance_after_tx = int(get_balance(USER, PEGGYETH, network_password))
     print("After burn transaction {}'s balance of {} is {}".format(
         USER, PEGGYETH, balance_after_tx))
     if balance_after_tx != balance_before_tx - AMOUNT:
@@ -165,7 +143,7 @@ def test_case_3():
     print(
         "########## Test Case Three Start: lock rowan in sifchain transfer to ethereum"
     )
-    balance_before_tx = int(get_balance(USER, ROWAN))
+    balance_before_tx = int(get_balance(USER, ROWAN, network_password))
     print("Before lock transaction {}'s balance of {} is {}".format(
         USER, ROWAN, balance_before_tx))
     if balance_before_tx < AMOUNT:
@@ -173,7 +151,7 @@ def test_case_3():
     print("Send lock claim to Sifchain...")
     lock_rowan(USER, AMOUNT)
     time.sleep(SLEEPTIME)
-    balance_after_tx = int(get_balance(USER, ROWAN))
+    balance_after_tx = int(get_balance(USER, ROWAN, network_password))
     print("After lock transaction {}'s balance of {} is {}".format(
         USER, ROWAN, balance_after_tx))
     if balance_after_tx != balance_before_tx - AMOUNT:
@@ -185,13 +163,13 @@ def test_case_4():
     print(
         "########## Test Case Four Start: burn erwn in ethereum then transfer rwn back to sifchain"
     )
-    balance_before_tx = int(get_balance(USER, ROWAN))
+    balance_before_tx = int(get_balance(USER, ROWAN, network_password))
     print("Before lock transaction {}'s balance of {} is {}".format(
         USER, ROWAN, balance_before_tx))
     print("Send burn claim to Sifchain...")
     create_claim(USER, VALIDATOR, AMOUNT, ROWAN, CLAIMBURN)
     time.sleep(SLEEPTIME)
-    balance_after_tx = int(get_balance(USER, ROWAN))
+    balance_after_tx = int(get_balance(USER, ROWAN, network_password))
     print("After lock transaction {}'s balance of {} is {}".format(
         USER, ROWAN, balance_after_tx))
     if balance_after_tx != balance_before_tx + AMOUNT:

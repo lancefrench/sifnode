@@ -3,13 +3,16 @@ import json
 import time
 import re
 import sys
+import os
+from test_utilities import print_error_message, get_user_account, get_balance
+from test_utilities import get_shell_output
+from test_utilities import test_log_line
 
 # define users
-VALIDATOR = "user1"
-USER = "user2"
-ROWAN = "rwn"
+USER = "user1"
+ROWAN = "rowan"
 PEGGYETH = "ceth"
-PEGGYROWAN = "erwn"
+PEGGYROWAN = "erowan"
 ETH = "eth"
 ETH_CONTRACT = "0x0000000000000000000000000000000000000000"
 SLEEPTIME = 5
@@ -17,6 +20,7 @@ AMOUNT = 10**18
 ROWAN_AMOUNT = 100
 CLAIMLOCK = "lock"
 CLAIMBURN = "burn"
+SMART_CONTRACTS_DIR = os.environ.get("SMART_CONTRACTS_DIR")
 
 ETH_OPERATOR = "0x627306090abaB3A6e1400e9345bC60c78a8BEf57"
 ETH_ACCOUNT = "0xf17f52151EbEF6C7334FAD080c5704D77216b732"
@@ -24,26 +28,16 @@ BRIDGE_CONTRACT = "0x75c35C980C0d37ef46DF04d31A140b65503c0eEd"
 ROWAN_CONTRACT = "0x409Ba3dd291bb5D48D5B4404F5EFa207441F6CbA"
 
 BASEDIR = sys.argv[0]
-GOTO_TESTNET_FOLDER = f"cd {BASEDIR}/smart-contracts/;\n"
+if SMART_CONTRACTS_DIR is None:
+    print_error_message("SMART_CONTRACTS_DIR env var is required")
 
-
-def print_error_message(error_message):
-    print("#################################")
-    print("!!!!Error: ", error_message)
-    print("#################################")
-
-
-def get_shell_output(command_line):
-    print(f"cmd: {command_line}")
-    sub = subprocess.Popen(command_line, shell=True, stdout=subprocess.PIPE)
-    subprocess_return = sub.stdout.read()
-    return subprocess_return.rstrip()
+GOTO_TESTNET_FOLDER = f"cd {SMART_CONTRACTS_DIR}/smart-contracts/;\n"
 
 
 def get_eth_balance(account, symbol):
     command_line = GOTO_TESTNET_FOLDER + "yarn peggy:getTokenBalance {} {}".format(
         account, symbol)
-    result = get_shell_output(command_line).decode("utf-8")
+    result = get_shell_output(command_line)
     lines = result.split('\n')
     for line in lines:
         balance = re.match("Eth balance for.*\((.*) Wei\).*", line)
@@ -55,7 +49,7 @@ def get_eth_balance(account, symbol):
 def get_peggyrwn_balance(account, symbol):
     command_line = GOTO_TESTNET_FOLDER + "yarn peggy:getTokenBalance {} {}".format(
         account, symbol)
-    result = get_shell_output(command_line).decode("utf-8")
+    result = get_shell_output(command_line)
     lines = result.split('\n')
     for line in lines:
         balance = re.match("Balance of eRWN for.*\((.*) eRWN.*\).*",
@@ -68,7 +62,7 @@ def get_peggyrwn_balance(account, symbol):
 def send_eth_lock(sifchain_user, symbol, amount):
     command_line = GOTO_TESTNET_FOLDER + "yarn peggy:lock {} {} {}".format(
         get_user_account(sifchain_user), symbol, amount)
-    result = get_shell_output(command_line).decode("utf-8")
+    result = get_shell_output(command_line)
 
 
 def burn_peggyrwn(sifchain_user, peggyrwn_contract, amount):
@@ -77,32 +71,16 @@ def burn_peggyrwn(sifchain_user, peggyrwn_contract, amount):
     get_shell_output(command_line)
 
 
-def get_user_account(user):
-    command_line = "sifnodecli keys show " + user + " -a"
-    return get_shell_output(command_line).decode("utf-8")
-
-
 def get_operator_account(user):
     command_line = "sifnodecli keys show " + user + " -a --bech val"
-    return get_shell_output(command_line).decode("utf-8")
+    return get_shell_output(command_line)
 
 
 def get_account_nonce(user):
     command_line = "sifnodecli q auth account " + get_user_account(user)
-    output = get_shell_output(command_line).decode("utf-8")
+    output = get_shell_output(command_line)
     json_str = json.loads(output)
     return json_str["value"]["sequence"]
-
-
-def get_balance(user, denom):
-    command_line = "sifnodecli q auth account " + get_user_account(user)
-    output = get_shell_output(command_line).decode("utf-8")
-    json_str = json.loads(output)
-    coins = json_str["value"]["coins"]
-    for coin in coins:
-        if coin["denom"] == denom:
-            return coin["amount"]
-    return 0
 
 
 def burn_peggy_coin(user, eth_user, amount):
@@ -127,6 +105,7 @@ def test_case_1():
     )
     operator_balance_before_tx = int(get_eth_balance(ETH_OPERATOR, ETH))
     contract_balance_before_tx = int(get_eth_balance(BRIDGE_CONTRACT, ETH))
+    print(f"getbalqqr: {USER} / {PEGGYETH}")
     balance_before_tx = int(get_balance(USER, PEGGYETH))
     print("Before lock transaction {}'s balance of {} is {}".format(
         ETH_OPERATOR, ETH, operator_balance_before_tx))
