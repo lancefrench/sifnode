@@ -97,6 +97,7 @@ sleep 5
 docker exec ${CONTAINER_NAME} bash -c "bash /test/integration/start-ganache-port-forwarding.sh"
 docker exec ${CONTAINER_NAME} bash -c "cd /smart-contracts && yarn install"
 docker exec ${CONTAINER_NAME} bash -c "SMART_CONTRACTS_DIR=/smart-contracts python3 /test/integration/peggy-basic-test-docker.py /network-definition.yml"
+docker exec ${CONTAINER_NAME} bash -c 'SMART_CONTRACTS_DIR=/smart-contracts python3 /test/integration/peggy-e2e-test.py /network-definition.yml'
 
 # killing script will not end network use stop-integration-env.sh for that
 # and note that we just allow the github actions environment to be cleaned
