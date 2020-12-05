@@ -39,9 +39,11 @@ def get_eth_balance(account, symbol):
         account, symbol)
     result = get_shell_output(command_line)
     lines = result.split('\n')
+    print(f"qqrx: cmd is {command_line}\nlines {lines}")
     for line in lines:
         balance = re.match("Eth balance for.*\((.*) Wei\).*", line)
         if balance:
+            print(f"qqr got good balance")
             return balance.group(1)
     return 0
 
@@ -115,7 +117,7 @@ def test_case_1():
         USER, PEGGYETH, balance_before_tx))
     print("Send lock claim to Sifchain...")
     if operator_balance_before_tx < AMOUNT:
-        print_error_message("No enough ETH for the account to lock")
+        print_error_message(f"No enough ETH (operator balance is {operator_balance_before_tx}) for the account to lock")
     send_eth_lock(USER, ETH, AMOUNT)
     time.sleep(SLEEPTIME)
 
@@ -131,7 +133,7 @@ def test_case_1():
     if balance_after_tx != balance_before_tx + AMOUNT:
         print_error_message("balance is wrong after send eth lock claim")
     if contract_balance_after_tx != contract_balance_before_tx + AMOUNT:
-        print_error_message("bridge contract balance is wrong after send eth lock claim")
+        print_error_message(f"bridge contract balance is wrong; contract_balance_after_tx is {contract_balance_after_tx}, expected is {contract_balance_before_tx + AMOUNT} after send eth lock claim")
     print("########## Test Case One Over ##########")
 
 
