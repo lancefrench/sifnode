@@ -44,7 +44,9 @@ fi
 # scaffold and boot the dockerized localnet
 #
 BASEDIR=${BASEDIR} rake genesis:network:scaffold['localnet']
-BASEDIR=${BASEDIR} rake genesis:network:boot["localnet,${ETHEREUM_CONTRACT_ADDRESS},ae6ae8e5ccbfb04590405997ee2d52d2b330726137b875053c36d94e974d162f,ws://192.168.2.6:7545/"]
+# see deploy/rake/genesis.rake for the description of the args to genesis:network:boot
+# :chainnet, :eth_bridge_registry_address, :eth_keys, :eth_websocket
+BASEDIR=${BASEDIR} rake genesis:network:boot["localnet,${ETHEREUM_CONTRACT_ADDRESS},c87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3,ws://192.168.2.6:7545/"]
 
 # those rake commands generate yaml that provides useful usernames and passwords
 # wait for it to appear
